@@ -1,0 +1,15 @@
+{
+    "door": {
+        "desiredStatus": "close",
+        "openCounter": 9,
+        "state": "close"
+    },
+    "gate": {
+        "desiredStatus": "close"
+    },
+    "lastChange": {
+        "device": "door",
+        "timeStamp": "2019-06-14T00:24:27",
+        "user": "controller"
+    }
+}
