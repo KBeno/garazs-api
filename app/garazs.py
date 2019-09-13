@@ -3,25 +3,31 @@ from flask_restful import Api, Resource, reqparse
 import json
 from datetime import datetime
 from flask_httpauth import HTTPBasicAuth
+from user import check_password, init_users_file
 
 STATUS_JSON = './status.json'
 
-with open('./users.json', 'r') as users_json:
-    USERS_PWS = json.load(users_json)
+init_users_file(force=False)
 
 app = Flask(__name__)
 api = Api(app)
 
-
 auth = HTTPBasicAuth()
 
-@auth.get_password
-def get_password(username):
-    if username in USERS_PWS.keys():
-        g.username = username
-        return USERS_PWS[username]
-    return None
+# @auth.get_password
+# def get_password(username):
+#     if username in USERS_PWS.keys():
+#         g.username = username
+#         return USERS_PWS[username]
+#     return None
 
+@auth.verify_password
+def verify_password(username, password):
+    if check_password(user=username, pwd=password):
+        g.username = username
+        return True
+    else:
+        return False
 
 class controllerAPI(Resource):
     decorators = [auth.login_required]
@@ -39,7 +45,7 @@ class controllerAPI(Resource):
         return status[device]['desiredStatus']
 
     def put(self, device):
-        # modify the desired status if the door was open manually or gate action was triggered
+        # modify the desired status if the door was opened manually or gate action was triggered
         args = self.reqparse.parse_args()
         desiredStatus = args['desiredStatus']
         # openCounter = args['openCounter']
@@ -52,7 +58,7 @@ class controllerAPI(Resource):
             status['lastChange']['timeStamp'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             status['lastChange']['device'] = device
             status_json.seek(0)
-            json.dump(status, status_json)
+            json.dump(status, status_json, indent=4)
             status_json.truncate()
         return 'recieved'
 
@@ -67,7 +73,7 @@ class controllerAPI(Resource):
                 status[device]['openCounter'] = openCounter
                 status[device]['state'] = state
                 status_json.seek(0)
-                json.dump(status, status_json)
+                json.dump(status, status_json, indent=4)
                 status_json.truncate()
             return 'recieved'
 
@@ -80,6 +86,7 @@ class clientAPI(Resource):
         super().__init__()
 
     def get(self, device):
+        # return the status of the device
         with open(STATUS_JSON, 'r') as status_json:
             status = json.load(status_json)
         return status[device]
@@ -94,7 +101,7 @@ class clientAPI(Resource):
             status['lastChange']['timeStamp'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             status['lastChange']['device'] = device
             status_json.seek(0)
-            json.dump(status, status_json)
+            json.dump(status, status_json, indent=4)
             status_json.truncate()
         return {'Result': 'OK', 'user': g.username, 'Device': device}
 
@@ -105,4 +112,4 @@ api.add_resource(clientAPI, '/client/<string:device>')
 # use only for development:
 
 # if __name__ == '__main__':
-#     app.run(debug=True, port=9090)
+#     app.run(debug=True, port=9090, host='0.0.0.0')

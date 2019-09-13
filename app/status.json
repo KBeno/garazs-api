@@ -1,7 +1,7 @@
 {
     "door": {
         "desiredStatus": "close",
-        "openCounter": 9,
+        "openCounter": 0,
         "state": "close"
     },
     "gate": {
